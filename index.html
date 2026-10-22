@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAILY OOS INDF</title>
+    <!-- Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS untuk membaca file Excel (.xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 flex flex-col justify-center">
+
+    <!-- BAGIAN HALAMAN LOGIN -->
+    <div id="login-container" class="max-w-md mx-auto w-full bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-xl space-y-6">
+        <div class="text-center space-y-2">
+            <!-- Logo Indofood (Pengganti ikon kunci) -->
+            <div class="text-center space-y-3">
+            <!-- Logo Indofood diambil dari internet -->
+            <div class="inline-flex items-center justify-center bg-white p-3 rounded-2xl border border-slate-700 shadow-inner mb-1">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b4/Indofood_logo-en.svg?utm_source=id.wikipedia.org&utm_campaign=index&utm_content=original" alt="Logo Indofood" class="h-12 object-contain">
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight">Login Resume OOS</h1>
+            <p class="text-slate-400 text-sm">Silakan masukkan akses masuk untuk melihat laporan.</p>
+        </div>
+    </div>
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Username</label>
+                <input type="text" id="username" required placeholder="Masukkan username..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Password / PIN</label>
+                <input type="password" id="password" required placeholder="Masukkan password..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+            </div>
+            <p id="login-error" class="text-xs text-rose-400 hidden">Username atau password salah!</p>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm py-2.5 px-4 rounded-lg transition">
+                Masuk ke Dashboard
+            </button>
+        </form>
+    </div>
+
+    <!-- BAGIAN UTAMA DASHBOARD -->
+    <div id="main-app" class="max-w-7xl mx-auto space-y-6 hidden w-full">
+        
+        <!-- Header & Info -->
+        <header class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600/20 p-2.5 rounded-xl border border-blue-500/30 text-blue-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">RESUME DAILY OOS INDOFOOD</h1>
+                    <p class="text-slate-400 text-sm mt-0.5">
+                        Drag and Drop file report OOS ke bawah ini agar data dapat diproses.
+                    </p>
+                </div>
+            </div>
+            <button id="btn-logout" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium py-2 px-3 rounded-lg transition">
+                Keluar (Logout)
+            </button>
+        </header>
+
+        <!-- Area Drag & Drop File -->
+        <div id="drop-zone" class="border-2 border-dashed border-slate-600 hover:border-slate-400 bg-slate-800/50 rounded-xl p-8 text-center cursor-pointer transition">
+            <input type="file" id="file-input" class="hidden" accept=".xlsx, .xls, .csv">
+            <p class="text-sm font-medium text-slate-300">Drag and Drop file Excel ke sini atau klik untuk memilih</p>
+            <p id="file-name" class="text-xs text-slate-500 mt-2">Belum ada file yang dipilih</p>
+        </div>
+
+        <!-- Panel Kontrol & Filter -->
+        <div id="dashboard-content" class="space-y-6 hidden">
+            
+            <!-- Metadata Info -->
+            <div id="meta-info" class="text-xs text-slate-400 bg-slate-800 p-3 rounded-lg border border-slate-700">
+                Memuat data...
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <p class="text-2xl font-bold" id="card-toko">0</p>
+                    <p class="text-xs text-slate-400 mt-1">Toko terdampak</p>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <p class="text-2xl font-bold" id="card-produk">0</p>
+                    <p class="text-xs text-slate-400 mt-1">Produk OOS</p>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <p class="text-2xl font-bold" id="card-kejadian">0</p>
+                    <p class="text-xs text-slate-400 mt-1">Kejadian OOS</p>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <p class="text-2xl font-bold" id="card-total-hari">0</p>
+                    <p class="text-xs text-slate-400 mt-1">Total hari OOS</p>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <p class="text-2xl font-bold" id="card-rata">0</p>
+                    <p class="text-xs text-slate-400 mt-1">Rata-rata durasi (hari)</p>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <p class="text-2xl font-bold text-rose-400" id="card-over-7">0</p>
+                    <p class="text-xs text-slate-400 mt-1">OOS > 7 hari</p>
+                </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-slate-800 p-4 rounded-xl border border-slate-700 items-center">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Region</label>
+                    <select id="filter-region" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="">(Semua)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Area</label>
+                    <select id="filter-area" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="">(Semua)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Divisi</label>
+                    <select id="filter-divisi" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="">(Semua)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Durasi OOS</label>
+                    <select id="filter-durasi" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="">(Semua)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Assortment / Brand</label>
+                    <select id="filter-assortment" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="">(Semua)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Cari toko / produk</label>
+                    <input type="text" id="filter-search" placeholder="Ketik kata kunci..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                </div>
+            </div>
+
+            <!-- Tab Navigasi Tampilan -->
+            <div class="flex flex-wrap gap-2 border-b border-slate-800 pb-2 justify-between items-center">
+                <div class="flex flex-wrap gap-2">
+                    <button class="tab-btn px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white transition" data-target="toko-produk">Toko × Produk</button>
+                    <button class="tab-btn px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-target="per-toko">Per Toko</button>
+                    <button class="tab-btn px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-target="per-produk">Per Produk</button>
+                    <button class="tab-btn px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-target="per-alasan">Per Alasan</button>
+                    <button class="tab-btn px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-target="per-leader">Per Team Leader</button>
+                </div>
+                <div>
+                    <button id="btn-export" class="bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm py-2 px-4 rounded-lg transition">
+                        Ekspor ke Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabel Data -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead id="table-head" class="bg-slate-900/50 text-slate-400 border-b border-slate-700 text-xs uppercase">
+                            <!-- Header dinamis sesuai tab -->
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-slate-700/50">
+                            <!-- Baris data dimuat lewat JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-3 bg-slate-900/30 text-xs text-slate-400 border-t border-slate-700 flex justify-between items-center">
+                    <span id="row-count">0 baris</span>
+                    <span>Merah = OOS lebih dari 7 hari, oranye = 3 sampai 7 hari.</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script Logika Pengolahan Data & Login -->
+    <script>
+        const ADMIN_USER = "admin";
+        const ADMIN_PASS = "indofood2026";
+
+        const loginContainer = document.getElementById('login-container');
+        const mainApp = document.getElementById('main-app');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const btnLogout = document.getElementById('btn-logout');
+
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+            loginContainer.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            document.body.classList.remove('justify-center');
+        }
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+
+            if (u === ADMIN_USER && p === ADMIN_PASS) {
+                localStorage.setItem('isLoggedIn', 'true');
+                loginError.classList.add('hidden');
+                loginContainer.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                document.body.classList.remove('justify-center');
+            } else {
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        btnLogout.addEventListener('click', () => {
+            localStorage.removeItem('isLoggedIn');
+            location.reload();
+        });
+
+        let rawData = [];
+        let activeTab = 'toko-produk';
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileNameEl = document.getElementById('file-name');
+        const dashboardContent = document.getElementById('dashboard-content');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-blue-500'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            fileNameEl.textContent = `File dipilih: ${file.name}`;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    let sheetName = workbook.SheetNames.find(s => s.toLowerCase() === "report daily oos".toLowerCase());
+                    if (!sheetName) sheetName = workbook.SheetNames[0];
+                    
+                    const worksheet = workbook.Sheets[sheetName];
+                    rawData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if (rawData.length > 0) {
+                        dashboardContent.classList.remove('hidden');
+                        initFilters();
+                        updateDashboard();
+                    } else {
+                        alert('File Excel kosong atau format sheet tidak sesuai.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Gagal membaca file Excel.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseHari(val) {
+            if (val === undefined || val === null || val === '') return 0;
+            const match = String(val).match(/\d+/);
+            return match ? parseInt(match[0], 10) : 0;
+        }
+
+        function initFilters() {
+            const regions = [...new Set(rawData.map(item => item.REGION || item.Region || item.region))].filter(Boolean);
+            const areas = [...new Set(rawData.map(item => item.AREA || item.Area || item.area))].filter(Boolean);
+            const divisies = [...new Set(rawData.map(item => item.DIVISI || item.Divisi || item.divisi))].filter(Boolean);
+            
+            const durasiList = [...new Set(rawData.map(item => 
+                item['DURASI OOS(HARI)'] || item['HARI OOS'] || item['Hari OOS'] || item.Hari || item.Durasi
+            ))].filter(val => val !== undefined && val !== null && val !== '');
+            durasiList.sort((a, b) => parseHari(a) - parseHari(b));
+
+            const assortmentList = [...new Set(rawData.map(item => 
+                item.BRAND || item.Brand || item.brand || item.ASSORTMENT || item.Assortment || item.assortment
+            ))].filter(Boolean);
+            assortmentList.sort();
+
+            populateSelect('filter-region', regions);
+            populateSelect('filter-area', areas);
+            populateSelect('filter-divisi', divisies);
+            populateSelect('filter-durasi', durasiList); 
+            populateSelect('filter-assortment', assortmentList); 
+        }
+
+        function populateSelect(id, items) {
+            const select = document.getElementById(id);
+            select.innerHTML = '<option value="">(Semua)</option>';
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                select.appendChild(opt);
+            });
+        }
+
+        function getFilteredData() {
+            const selRegion = document.getElementById('filter-region').value;
+            const selArea = document.getElementById('filter-area').value;
+            const selDivisi = document.getElementById('filter-divisi').value;
+            const selDurasi = document.getElementById('filter-durasi').value; 
+            const selAssortment = document.getElementById('filter-assortment').value;
+            const searchTxt = document.getElementById('filter-search').value.toLowerCase();
+
+            return rawData.filter(row => {
+                const region = String(row.REGION || row.Region || '');
+                const area = String(row.AREA || row.Area || '');
+                const divisi = String(row.DIVISI || row.Divisi || '');
+                
+                const rawDurasiVal = row['DURASI OOS(HARI)'] || row['HARI OOS'] || row['Hari OOS'] || row.Hari || row.Durasi || '';
+                const assortmentVal = String(row.BRAND || row.Brand || row.brand || row.ASSORTMENT || row.Assortment || row.assortment || '');
+                
+                const toko = String(row.OUTLET || row.Toko || row.TOKO || '');
+                const produk = String(row['PRODUK OOS'] || row.Produk || row.PRODUK || '');
+
+                if (selRegion && region !== selRegion) return false;
+                if (selArea && area !== selArea) return false;
+                if (selDivisi && divisi !== selDivisi) return false;
+                
+                if (selDurasi !== "") {
+                    const targetHari = parseHari(selDurasi);
+                    const rowHari = parseHari(rawDurasiVal);
+                    if (rowHari !== targetHari) return false;
+                }
+
+                if (selAssortment && assortmentVal !== selAssortment) return false;
+
+                if (searchTxt && !toko.toLowerCase().includes(searchTxt) && !produk.toLowerCase().includes(searchTxt)) return false;
+
+                return true;
+            });
+        }
+
+        function updateDashboard() {
+            const data = getFilteredData();
+            
+            const uniqueStores = new Set(data.map(r => r.OUTLET || r.Toko || r.TOKO)).size;
+            const uniqueProducts = new Set(data.map(r => r['PRODUK OOS'] || r.Produk || r.PRODUK)).size;
+            const totalKejadian = data.length;
+            
+            const totalHari = data.reduce((acc, r) => acc + parseHari(r['DURASI OOS(HARI)'] || r.Hari || r.Durasi), 0);
+            const rataDurasi = totalKejadian ? (totalHari / totalKejadian).toFixed(1) : 0;
+            const over7 = data.filter(r => parseHari(r['DURASI OOS(HARI)'] || r.Hari || r.Durasi) > 7).length;
+
+            document.getElementById('card-toko').textContent = uniqueStores;
+            document.getElementById('card-produk').textContent = uniqueProducts;
+            document.getElementById('card-kejadian').textContent = totalKejadian;
+            document.getElementById('card-total-hari').textContent = totalHari;
+            document.getElementById('card-rata').textContent = rataDurasi;
+            document.getElementById('card-over-7').textContent = over7;
+
+            document.getElementById('meta-info').textContent = `Total data tersaring: ${data.length} baris dari total ${rawData.length} baris file.`;
+
+            renderTable(data);
+        }
+
+        function renderTable(data) {
+            const thead = document.getElementById('table-head');
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (activeTab === 'toko-produk') {
+                thead.innerHTML = `<tr>
+                    <th class="p-3">Toko</th>
+                    <th class="p-3">Produk</th>
+                    <th class="p-3">Divisi</th>
+                    <th class="p-3">Hari OOS</th>
+                    <th class="p-3">Reson OOS</th>
+                </tr>`;
+                
+                data.forEach(r => {
+                    const hari = parseHari(r['DURASI OOS(HARI)'] || r.Hari || r.Durasi);
+                    const tokoVal = r.OUTLET || r.Toko || r.TOKO || '-';
+                    const produkVal = r['PRODUK OOS'] || r.Produk || r.PRODUK || '-';
+                    const divisiVal = r.DIVISI || r.Divisi || '-';
+                    const resonVal = r['RESON OOS'] || r['REASON OOS'] || r.Alasan || r.Keterangan || '-';
+
+                    let colorClass = '';
+                    if (hari > 7) colorClass = 'text-rose-400 font-bold';
+                    else if (hari >= 3) colorClass = 'text-amber-400';
+
+                    tbody.innerHTML += `<tr class="hover:bg-slate-700/30">
+                        <td class="p-3">${tokoVal}</td>
+                        <td class="p-3">${produkVal}</td>
+                        <td class="p-3">${divisiVal}</td>
+                        <td class="p-3 ${colorClass}">${hari} Hari</td>
+                        <td class="p-3 text-slate-300">${resonVal}</td>
+                    </tr>`;
+                });
+            } else if (activeTab === 'per-toko') {
+                thead.innerHTML = `<tr><th class="p-3">Toko</th><th class="p-3">Jumlah Produk OOS</th><th class="p-3">Total Hari</th></tr>`;
+                
+                const grouped = {};
+                data.forEach(r => {
+                    const toko = r.OUTLET || r.Toko || r.TOKO || 'Lainnya';
+                    if (!grouped[toko]) grouped[toko] = { count: 0, hari: 0 };
+                    grouped[toko].count++;
+                    grouped[toko].hari += parseHari(r['DURASI OOS(HARI)'] || r.Hari || r.Durasi);
+                });
+
+                for (let toko in grouped) {
+                    tbody.innerHTML += `<tr class="hover:bg-slate-700/30">
+                        <td class="p-3">${toko}</td>
+                        <td class="p-3">${grouped[toko].count}</td>
+                        <td class="p-3">${grouped[toko].hari}</td>
+                    </tr>`;
+                }
+            } else if (activeTab === 'per-produk') {
+                thead.innerHTML = `<tr><th class="p-3">Produk</th><th class="p-3">Divisi</th><th class="p-3">Toko Terdampak</th><th class="p-3">Total Hari OOS</th></tr>`;
+                
+                const grouped = {};
+                data.forEach(r => {
+                    const produk = r['PRODUK OOS'] || r.Produk || r.PRODUK || 'Lainnya';
+                    const tokoName = r.OUTLET || r.Toko || r.TOKO || '';
+                    if (!grouped[produk]) grouped[produk] = { divisi: r.DIVISI || r.Divisi || '-', tokoSet: new Set(), hari: 0 };
+                    if (tokoName) grouped[produk].tokoSet.add(tokoName);
+                    grouped[produk].hari += parseHari(r['DURASI OOS(HARI)'] || r.Hari || r.Durasi);
+                });
+
+                for (let produk in grouped) {
+                    tbody.innerHTML += `<tr class="hover:bg-slate-700/30">
+                        <td class="p-3">${produk}</td>
+                        <td class="p-3">${grouped[produk].divisi}</td>
+                        <td class="p-3">${grouped[produk].tokoSet.size}</td>
+                        <td class="p-3">${grouped[produk].hari}</td>
+                    </tr>`;
+                }
+            } else if (activeTab === 'per-leader') {
+                thead.innerHTML = `<tr>
+                    <th class="p-3">Nama Team Leader</th>
+                    <th class="p-3">Username</th>
+                    <th class="p-3">Jumlah Toko Terdampak</th>
+                    <th class="p-3">Total Kejadian OOS</th>
+                    <th class="p-3">Total Hari OOS</th>
+                </tr>`;
+                
+                const grouped = {};
+                data.forEach(r => {
+                    const nama = r.NAMA || r.Nama || r.nama || 'Tanpa Nama';
+                    const username = r.USERNAME || r.Username || r.username || '-';
+                    const key = `${nama}_${username}`;
+                    
+                    if (!grouped[key]) {
+                        grouped[key] = { nama: nama, username: username, tokoSet: new Set(), kejadian: 0, hari: 0 };
+                    }
+                    
+                    const tokoName = r.OUTLET || r.Toko || r.TOKO || '';
+                    if (tokoName) grouped[key].tokoSet.add(tokoName);
+                    
+                    grouped[key].kejadian++;
+                    grouped[key].hari += parseHari(r['DURASI OOS(HARI)'] || r.Hari || r.Durasi);
+                });
+
+                for (let key in grouped) {
+                    const item = grouped[key];
+                    tbody.innerHTML += `<tr class="hover:bg-slate-700/30">
+                        <td class="p-3 font-medium">${item.nama}</td>
+                        <td class="p-3 text-slate-400 text-xs">${item.username}</td>
+                        <td class="p-3">${item.tokoSet.size}</td>
+                        <td class="p-3">${item.kejadian}</td>
+                        <td class="p-3">${item.hari}</td>
+                    </tr>`;
+                }
+            } else {
+                thead.innerHTML = `<tr><th class="p-3">Alasan OOS</th><th class="p-3">Jumlah Kejadian</th></tr>`;
+                
+                const grouped = {};
+                data.forEach(r => {
+                    const alasan = r['RESON OOS'] || r['REASON OOS'] || r.Alasan || r.Keterangan || 'Tidak ada keterangan';
+                    grouped[alasan] = (grouped[alasan] || 0) + 1;
+                });
+
+                for (let alasan in grouped) {
+                    tbody.innerHTML += `<tr class="hover:bg-slate-700/30">
+                        <td class="p-3">${alasan}</td>
+                        <td class="p-3">${grouped[alasan]}</td>
+                    </tr>`;
+                }
+            }
+
+            document.getElementById('row-count').textContent = `${tbody.children.length} baris ditampilkan`;
+        }
+
+        // Listener Filter & Tab
+        ['filter-region', 'filter-area', 'filter-divisi', 'filter-durasi', 'filter-assortment', 'filter-search'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateDashboard);
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.replace('bg-blue-600', 'bg-slate-800'));
+                e.target.classList.replace('bg-slate-800', 'bg-blue-600');
+                activeTab = e.target.getAttribute('data-target');
+                updateDashboard();
+            });
+        });
+
+        // Ekspor ke Excel
+        document.getElementById('btn-export').addEventListener('click', () => {
+            const data = getFilteredData();
+            if (!data.length) return alert('Tidak ada data untuk diekspor!');
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Resume OOS Filtered");
+            XLSX.writeFile(wb, "Resume_OOS_Filtered.xlsx");
+        });
+    </script>
+</body>
+</html>
